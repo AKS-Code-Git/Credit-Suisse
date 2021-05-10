@@ -37,26 +37,30 @@ public class LogAlert {
 		List<Log> logs = new ArrayList<Log>();
 		try {
 			while (ok) {
-				Thread.sleep(1000);
+				Thread.sleep(PropUtil.getPause());
 				List<String> lines = Utility.readfile(Utility.replicatefile());
 				long lineNumber = 0;
 				long skipLine = 0;
 				long lastRead = Utility.readState();
-				for (Iterator<String> iterator = lines.iterator(); iterator.hasNext();) {
-					String jsonString = iterator.next();
-					if (jsonString.trim().endsWith("}") && skipLine > lastRead) {
-						Gson gson = builder.create();
-						logs.add(gson.fromJson(jsonString, Log.class));
-						lineNumber++;
+				if (lastRead < -1) {
+					ok = false;
+				} else {
+					for (Iterator<String> iterator = lines.iterator(); iterator.hasNext();) {
+						String jsonString = iterator.next();
+						if (jsonString.trim().endsWith("}") && skipLine > lastRead) {
+							Gson gson = builder.create();
+							logs.add(gson.fromJson(jsonString, Log.class));
+							lineNumber++;
+						}
+						if (jsonString.trim().endsWith("}")) {
+							skipLine++;
+						}
 					}
-					if (jsonString.trim().endsWith("}")) {
-						skipLine++;
+					if (logs != null && logs.size() > 0) {
+						ld.insertLog(logs);
+						logs.removeAll(logs);
+						Utility.writeState(lineNumber + lastRead);
 					}
-				}
-				if (logs != null && logs.size() > 0) {
-					ld.insertLog(logs);
-					logs.removeAll(logs);
-					Utility.writeState(lineNumber + lastRead);
 				}
 				log.info("New JSON logs count :" + lineNumber);
 			}
