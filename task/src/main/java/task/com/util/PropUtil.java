@@ -6,8 +6,6 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-import task.com.LogAlert;
-
 public final class PropUtil {
 	private static String userDir = System.getProperty("user.dir");
 	private static String jdbcDriver;
@@ -21,6 +19,7 @@ public final class PropUtil {
 	private static String queryAlertUpdate;
 	private static String jsonFile;
 	private static short alertThreshold = 0;
+	private static long pause;
 
 	static Logger log = Logger.getLogger(PropUtil.class.getName());
 
@@ -40,9 +39,12 @@ public final class PropUtil {
 			PropUtil.queryInsert = p.getProperty("QUERY_INSERT");
 			PropUtil.queryAlert = p.getProperty("QUERY_FOR_ALERT");
 			PropUtil.queryAlertUpdate = p.getProperty("QUERY_FOR_ALERT_UPDATE");
-			PropUtil.jsonFile = p.getProperty("JASON_FILE");
+			PropUtil.jsonFile = p.getProperty("JSON_FILE");
 			if (p.getProperty("ALERT_THRESHOLD") != null) {
 				PropUtil.alertThreshold = Short.valueOf(p.getProperty("ALERT_THRESHOLD")).shortValue();
+			}
+			if (p.getProperty("PAUSE") != null) {
+				PropUtil.pause = Long.valueOf(p.getProperty("PAUSE")).longValue();
 			}
 			log.info("Property file read.");
 
@@ -133,5 +135,12 @@ public final class PropUtil {
 	 */
 	public static final short getAlertThreshold() {
 		return alertThreshold;
+	}
+
+	/**
+	 * @return the pause
+	 */
+	public static final long getPause() {
+		return pause;
 	}
 }
