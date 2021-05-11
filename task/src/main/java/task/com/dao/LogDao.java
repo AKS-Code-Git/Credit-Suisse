@@ -150,18 +150,10 @@ public class LogDao {
 
 	private LinkedList<Log> fetchDataForAlert(ResultSet rs) {
 
-		LinkedList<Log> scsmbstgraS = new LinkedList<Log>();
-		LinkedList<Log> scsmbstgraF = new LinkedList<Log>();
-		LinkedList<Log> scsmbstgrbS = new LinkedList<Log>();
-		LinkedList<Log> scsmbstgrbF = new LinkedList<Log>();
-		LinkedList<Log> scsmbstgrcS = new LinkedList<Log>();
-		LinkedList<Log> scsmbstgrcF = new LinkedList<Log>();
-
 		LinkedList<Log> start = new LinkedList<Log>();
 		LinkedList<Log> finish = new LinkedList<Log>();
 		try {
 			while (rs.next()) {
-//				String id = rs.getString(Constants.ID);
 				String state = rs.getString(Constants.STATE);
 				Log log = getLog(rs);
 				if ("STARTED".equals(state)) {
@@ -176,8 +168,6 @@ public class LogDao {
 		}
 		loger.info("Updating 'alert' flag.");
 		LinkedList<Log> alert = updateAlert(start, finish);
-//		scsmbstgr.addAll(updateAlert(scsmbstgrbS, scsmbstgrbF));
-//		scsmbstgr.addAll(updateAlert(scsmbstgrcS, scsmbstgrcF));
 		loger.info("Updated 'alert' flag.");
 		return alert;
 
