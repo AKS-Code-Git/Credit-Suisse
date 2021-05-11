@@ -42,7 +42,7 @@ public class LogDao {
 				this.connection.close();
 				loger.info("Database connection closed...");
 			} catch (SQLException e) {
-				loger.error(e);				
+				loger.error(e);
 			}
 			this.connection = null;
 		}
@@ -83,7 +83,9 @@ public class LogDao {
 			loger.info("Number of JSON logs inserted :" + log.size());
 
 			stmt = this.connection.createStatement();
+
 			rs = stmt.executeQuery(PropUtil.getQueryAlert());
+
 			LinkedList<Log> scsmbstgr = fetchDataForAlert(rs);
 
 			prepStmt = this.connection.prepareStatement(PropUtil.getQueryAlertUpdate());
@@ -121,12 +123,13 @@ public class LogDao {
 			loger.info("Preparing csv file with 'alert' flag at location : " + path);
 			writer = new BufferedWriter(new FileWriter(path));
 			writer.write(Constants.PK_ID + " , " + Constants.ID + " , " + Constants.STATE + " , " + Constants.TYPE
-					+ " , " + Constants.HOST + " , " + Constants.TIMESTAMP + " , " + Constants.ALERT + " , " + Constants.DURATION+ "\n");
+					+ " , " + Constants.HOST + " , " + Constants.TIMESTAMP + " , " + Constants.ALERT + " , "
+					+ Constants.DURATION + "\n");
 			while (rs.next()) {
 				writer.write(rs.getInt(Constants.PK_ID) + " , " + rs.getString(Constants.ID) + " , "
 						+ rs.getString(Constants.STATE) + " , " + rs.getString(Constants.TYPE) + " , "
 						+ rs.getString(Constants.HOST) + " , " + rs.getString(Constants.TIMESTAMP) + " , "
-						+ rs.getShort(Constants.ALERT) + ","+rs.getInt(Constants.DURATION)+"\n");
+						+ rs.getShort(Constants.ALERT) + "," + rs.getInt(Constants.DURATION) + "\n");
 
 			}
 			loger.info("Prepared csv file with 'alert' flag at location : " + path);
@@ -153,40 +156,30 @@ public class LogDao {
 		LinkedList<Log> scsmbstgrbF = new LinkedList<Log>();
 		LinkedList<Log> scsmbstgrcS = new LinkedList<Log>();
 		LinkedList<Log> scsmbstgrcF = new LinkedList<Log>();
+
+		LinkedList<Log> start = new LinkedList<Log>();
+		LinkedList<Log> finish = new LinkedList<Log>();
 		try {
 			while (rs.next()) {
-				String id = rs.getString(Constants.ID);
+//				String id = rs.getString(Constants.ID);
 				String state = rs.getString(Constants.STATE);
 				Log log = getLog(rs);
-				if (id.equals("scsmbstgra")) {
-					if (state.equals(Constants.STARTED)) {
-						scsmbstgraS.add(log);
-					} else if (state.equals(Constants.FINISHED)) {
-						scsmbstgraF.add(log);
-					}
-				} else if (id.equals("scsmbstgrb")) {
-					if (state.equals(Constants.STARTED)) {
-						scsmbstgrbS.add(log);
-					} else if (state.equals(Constants.FINISHED)) {
-						scsmbstgrbF.add(log);
-					}
-				} else if (id.equals("scsmbstgrc")) {
-					if (state.equals(Constants.STARTED)) {
-						scsmbstgrcS.add(log);
-					} else if (state.equals(Constants.FINISHED)) {
-						scsmbstgrcF.add(log);
-					}
+				if ("STARTED".equals(state)) {
+					start.add(log);
+				} else if ("FINISHED".equals(state)) {
+					finish.add(log);
 				}
+
 			}
 		} catch (SQLException e) {
 			loger.error(e);
 		}
 		loger.info("Updating 'alert' flag.");
-		LinkedList<Log> scsmbstgr = updateAlert(scsmbstgraS, scsmbstgraF);
-		scsmbstgr.addAll(updateAlert(scsmbstgrbS, scsmbstgrbF));
-		scsmbstgr.addAll(updateAlert(scsmbstgrcS, scsmbstgrcF));
+		LinkedList<Log> alert = updateAlert(start, finish);
+//		scsmbstgr.addAll(updateAlert(scsmbstgrbS, scsmbstgrbF));
+//		scsmbstgr.addAll(updateAlert(scsmbstgrcS, scsmbstgrcF));
 		loger.info("Updated 'alert' flag.");
-		return scsmbstgr;
+		return alert;
 
 	}
 
