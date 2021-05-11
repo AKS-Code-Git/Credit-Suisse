@@ -72,6 +72,7 @@ public class LogAlert {
 		} finally {
 			ld.anhilateDao();
 		}
+		log.info("Alert flags are set...Good Bye..");
 	}
 
 }
