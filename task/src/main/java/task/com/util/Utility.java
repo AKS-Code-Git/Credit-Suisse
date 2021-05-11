@@ -18,7 +18,7 @@ import org.apache.log4j.Logger;
 import task.com.LogAlert;
 
 public class Utility {
-	static Logger log = Logger.getLogger(LogAlert.class.getName());
+	static Logger log = Logger.getLogger(Utility.class.getName());
 
 	public static void writeState(long lineNumber) {
 		OutputStream output = null;
