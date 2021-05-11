@@ -3,13 +3,14 @@ package task.com.bean;
 import task.com.util.Constants;
 
 public class Log {
-	int pk_id;
-	String id = Constants.EMPTY_STRING;
-	String state = Constants.EMPTY_STRING;
-	String type = Constants.EMPTY_STRING;
-	String host = Constants.EMPTY_STRING;
-	long timestamp;
-	short alert = -1;
+	private int pk_id;
+	private String id = Constants.EMPTY_STRING;
+	private String state = Constants.EMPTY_STRING;
+	private String type = Constants.EMPTY_STRING;
+	private String host = Constants.EMPTY_STRING;
+	private long timestamp;
+	private int duration = -999;
+	private short alert = -1;
 
 	public String getId() {
 		return id;
@@ -17,7 +18,7 @@ public class Log {
 
 	public void setId(String id) {
 		this.id = id == null ? Constants.EMPTY_STRING : id;
-		
+
 	}
 
 	public String getState() {
@@ -94,12 +95,20 @@ public class Log {
 	}
 
 	public void setData(Log log) {
-		this.id=log.getId();
-		this.host=log.getHost();
-		this.alert=log.getAlert();
-		this.pk_id=log.getPk_id();
-		this.state=log.getState();
-		this.timestamp=log.getTimestamp();
-		this.type=log.getType();
+		this.id = log.getId();
+		this.host = log.getHost();
+		this.alert = log.getAlert();
+		this.pk_id = log.getPk_id();
+		this.state = log.getState();
+		this.timestamp = log.getTimestamp();
+		this.type = log.getType();
+	}
+
+	public int getDuration() {
+		return duration;
+	}
+
+	public void setDuration(int duration) {
+		this.duration = duration;
 	}
 }
