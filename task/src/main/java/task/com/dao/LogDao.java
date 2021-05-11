@@ -91,7 +91,8 @@ public class LogDao {
 			for (Iterator<Log> iterator = scsmbstgr.iterator(); iterator.hasNext();) {
 				Log log2 = iterator.next();
 				prepStmt.setShort(1, log2.getAlert());
-				prepStmt.setInt(2, log2.getPk_id());
+				prepStmt.setInt(2, log2.getDuration());
+				prepStmt.setInt(3, log2.getPk_id());
 				prepStmt.executeUpdate();
 			}
 			loger.info("Updated 'alert' flag in database.");
@@ -120,12 +121,12 @@ public class LogDao {
 			loger.info("Preparing csv file with 'alert' flag at location : " + path);
 			writer = new BufferedWriter(new FileWriter(path));
 			writer.write(Constants.PK_ID + " , " + Constants.ID + " , " + Constants.STATE + " , " + Constants.TYPE
-					+ " , " + Constants.HOST + " , " + Constants.TIMESTAMP + " , " + Constants.ALERT + "\n");
+					+ " , " + Constants.HOST + " , " + Constants.TIMESTAMP + " , " + Constants.ALERT + " , " + Constants.DURATION+ "\n");
 			while (rs.next()) {
 				writer.write(rs.getInt(Constants.PK_ID) + " , " + rs.getString(Constants.ID) + " , "
 						+ rs.getString(Constants.STATE) + " , " + rs.getString(Constants.TYPE) + " , "
 						+ rs.getString(Constants.HOST) + " , " + rs.getString(Constants.TIMESTAMP) + " , "
-						+ rs.getShort(Constants.ALERT) + "\n");
+						+ rs.getShort(Constants.ALERT) + ","+rs.getInt(Constants.DURATION)+"\n");
 
 			}
 			loger.info("Prepared csv file with 'alert' flag at location : " + path);
@@ -197,8 +198,10 @@ public class LogDao {
 			long x = finish.get(i).getTimestamp() - start.get(i).getTimestamp();
 			if (x > 4) {
 				finish.get(i).setAlert((short) 1);
+				finish.get(i).setDuration((int) x);
 				start.get(i).setAlert((short) 1);
 			} else {
+				finish.get(i).setDuration((int) x);
 				finish.get(i).setAlert((short) 0);
 				start.get(i).setAlert((short) 0);
 			}
