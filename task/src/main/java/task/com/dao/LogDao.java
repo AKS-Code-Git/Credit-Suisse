@@ -11,10 +11,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.log4j.Logger;
 
 import task.com.bean.Log;
+import task.com.functional.UpdateAlertFunctional;
 import task.com.util.Constants;
 import task.com.util.PropUtil;
 
@@ -105,7 +107,7 @@ public class LogDao {
 			loger.info("Updated 'alert' flag in database.");
 
 			rs = stmt.executeQuery("select * from LOG");
-			writeToFile(rs);
+			writeToFile().apply(rs);
 
 		} catch (SQLException e) {
 			loger.error(e);
@@ -114,36 +116,43 @@ public class LogDao {
 		}
 	}
 
-	private void writeToFile(ResultSet rs) {
-		BufferedWriter writer = null;
-		try {
+	private Function<ResultSet, Boolean> writeToFile() {
+		Function<ResultSet, Boolean> fs = (r) -> {
+			Boolean b = true;
+			BufferedWriter writer = null;
 			final String path = PropUtil.getUserDir() + "\\logs_" + System.currentTimeMillis() + ".csv";
 			loger.info("Preparing csv file with 'alert' flag at location : " + path);
-			writer = new BufferedWriter(new FileWriter(path));
-			writer.write(Constants.PK_ID + " , " + Constants.ID + " , " + Constants.STATE + " , " + Constants.TYPE
-					+ " , " + Constants.HOST + " , " + Constants.TIMESTAMP + " , " + Constants.ALERT + " , "
-					+ Constants.DURATION + "\n");
-			while (rs.next()) {
-				writer.write(rs.getInt(Constants.PK_ID) + " , " + rs.getString(Constants.ID) + " , "
-						+ rs.getString(Constants.STATE) + " , " + rs.getString(Constants.TYPE) + " , "
-						+ rs.getString(Constants.HOST) + " , " + rs.getString(Constants.TIMESTAMP) + " , "
-						+ rs.getShort(Constants.ALERT) + "," + rs.getInt(Constants.DURATION) + "\n");
+			try {
+				writer = new BufferedWriter(new FileWriter(path));
+				writer.write(Constants.PK_ID + " , " + Constants.ID + " , " + Constants.STATE + " , " + Constants.TYPE
+						+ " , " + Constants.HOST + " , " + Constants.TIMESTAMP + " , " + Constants.ALERT + " , "
+						+ Constants.DURATION + "\n");
+				while (r.next()) {
+					writer.write(r.getInt(Constants.PK_ID) + " , " + r.getString(Constants.ID) + " , "
+							+ r.getString(Constants.STATE) + " , " + r.getString(Constants.TYPE) + " , "
+							+ r.getString(Constants.HOST) + " , " + r.getString(Constants.TIMESTAMP) + " , "
+							+ r.getShort(Constants.ALERT) + "," + r.getInt(Constants.DURATION) + "\n");
 
+				}
+			} catch (IOException e) {
+				b = false;
+				loger.error(e);
+			} catch (SQLException e) {
+				b = false;
+				loger.error(e);
+			} finally {
+				try {
+					if (writer != null)
+						writer.close();
+				} catch (IOException e) {
+					loger.error(e);
+				}
 			}
 			loger.info("Prepared csv file with 'alert' flag at location : " + path);
-		} catch (SQLException e) {
-			loger.error(e);
-		} catch (IOException e) {
-			loger.error(e);
-		} finally {
-			try {
-				if (writer != null)
-					writer.close();
-			} catch (IOException e) {
-				loger.error(e);
-			}
-		}
 
+			return b;
+		};
+		return fs;
 	}
 
 	private LinkedList<Log> fetchDataForAlert(ResultSet rs) {
@@ -151,8 +160,8 @@ public class LogDao {
 		LinkedList<Log> finish = new LinkedList<Log>();
 		try {
 			while (rs.next()) {
-				String state = rs.getString(Constants.STATE);
-				Log log = getLog(rs);
+				String state = rs.getString(Constants.STATE);				
+				Log log = getLog().apply(rs);
 				if ("STARTED".equals(state)) {
 					start.add(log);
 				} else if ("FINISHED".equals(state)) {
@@ -194,19 +203,25 @@ public class LogDao {
 		return uaf;
 	}
 
-	private Log getLog(ResultSet rs) {
-		Log log = new Log();
-		try {
-			log.setPk_id(rs.getInt(Constants.PK_ID));
-			log.setId(rs.getString(Constants.ID));
-			log.setState(rs.getString(Constants.STATE));
-			log.setType(rs.getString(Constants.STATE));
-			log.setHost(rs.getString(Constants.HOST));
-			log.setTimestamp(rs.getLong(Constants.TIMESTAMP));
-			log.setAlert(rs.getShort(Constants.ALERT));
-		} catch (SQLException e) {
-			loger.error(e);
-		}
-		return log;
+
+	private Function<ResultSet, Log> getLog() {
+		Function<ResultSet, Log> fn = (rs) -> {
+			Log log = new Log();
+			try {
+				log.setPk_id(rs.getInt(Constants.PK_ID));
+				log.setId(rs.getString(Constants.ID));
+				log.setState(rs.getString(Constants.STATE));
+				log.setType(rs.getString(Constants.STATE));
+				log.setHost(rs.getString(Constants.HOST));
+				log.setTimestamp(rs.getLong(Constants.TIMESTAMP));
+				log.setAlert(rs.getShort(Constants.ALERT));
+			} catch (SQLException e) {
+				loger.error(e);
+			}
+			return log;
+		};
+
+		return fn;
+
 	}
 }
