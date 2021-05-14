@@ -18,7 +18,7 @@ import org.apache.log4j.Logger;
 import task.com.LogAlert;
 
 public class Utility {
-	static Logger log = Logger.getLogger(Utility.class.getName());
+	static Logger log = Logger.getLogger(LogAlert.class.getName());
 
 	public static void writeState(long lineNumber) {
 		OutputStream output = null;
@@ -71,13 +71,19 @@ public class Utility {
 		return dest.toFile().getAbsolutePath();
 	}
 
-	public static List<String> readfile(String path) {
+	public static List<String> readfile(String path, long lastRead) {
 		List<String> s = new ArrayList<String>();
+		long skipLine = 0;
 		try {
 			FileInputStream fis = new FileInputStream(path);
 			Scanner sc = new Scanner(fis);
 			while (sc.hasNextLine()) {
-				s.add(sc.nextLine());
+				if (skipLine > lastRead) {
+					s.add(sc.nextLine().trim());
+				}else {
+					sc.nextLine();
+					skipLine++;
+				}				
 			}
 			sc.close();
 		} catch (IOException e) {
