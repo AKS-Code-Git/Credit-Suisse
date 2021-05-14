@@ -40,11 +40,9 @@ public class LogAlert {
 				if (lastRead < -1) {
 					ok = false;
 				} else {
-					logs = lines.stream().map(jsonString -> {
-						Log lg = null;
-						Gson gson = builder.create();
-						lg = gson.fromJson(jsonString, Log.class);
-						return lg;
+					logs = lines.stream().map(jsonString -> {				
+						Gson gson = builder.create();						
+						return gson.fromJson(jsonString, Log.class);
 					}).collect(Collectors.toList());
 					log.info("Number of JSON log processed :" + logs.size());
 					if (logs != null && logs.size() > 0) {
