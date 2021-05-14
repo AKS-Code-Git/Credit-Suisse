@@ -179,14 +179,17 @@ public class LogDao {
 
 		for (int i = 0; i < size; i++) {
 			long x = finish.get(i).getTimestamp() - start.get(i).getTimestamp();
-			if (x > 4) {
-				finish.get(i).setAlert((short) 1);
-				finish.get(i).setDuration((int) x);
-				start.get(i).setAlert((short) 1);
-			} else {
-				finish.get(i).setDuration((int) x);
-				finish.get(i).setAlert((short) 0);
-				start.get(i).setAlert((short) 0);
+			boolean isValid = start.get(i).getId().equals(finish.get(i).getId());
+			if (isValid) {
+				if (x > 4) {
+					finish.get(i).setAlert((short) 1);
+					finish.get(i).setDuration((int) x);
+					start.get(i).setAlert((short) 1);
+				} else {
+					finish.get(i).setDuration((int) x);
+					finish.get(i).setAlert((short) 0);
+					start.get(i).setAlert((short) 0);
+				}
 			}
 		}
 		start.addAll(finish);
