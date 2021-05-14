@@ -3,8 +3,8 @@ package task.com;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
@@ -25,48 +25,37 @@ public class LogAlert {
 	static Logger log = Logger.getLogger(LogAlert.class.getName());
 
 	public static void main(String[] args) {
-
 		PropUtil.readProperties();
 		LogDao ld = new LogDao();
 		ld.createTable();
-		GsonBuilder builder = new GsonBuilder();
-		builder.setPrettyPrinting();
-
-		boolean ok = true;
-
 		List<Log> logs = new ArrayList<Log>();
 		try {
+			boolean ok = true;
+			GsonBuilder builder = new GsonBuilder();
+			builder.setPrettyPrinting();
 			while (ok) {
 				Thread.sleep(PropUtil.getPause());
-				List<String> lines = Utility.readfile(Utility.replicatefile());
-				long lineNumber = 0;
-				long skipLine = 0;
 				long lastRead = Utility.readState();
+				List<String> lines = Utility.readfile(Utility.replicatefile(), lastRead);
 				if (lastRead < -1) {
 					ok = false;
 				} else {
-					for (Iterator<String> iterator = lines.iterator(); iterator.hasNext();) {
-						String jsonString = iterator.next();
-						if (jsonString.trim().endsWith("}") && skipLine > lastRead) {
-							Gson gson = builder.create();
-							logs.add(gson.fromJson(jsonString, Log.class));
-							lineNumber++;
-						}
-						if (jsonString.trim().endsWith("}")) {
-							skipLine++;
-						}
-					}
+					logs = lines.stream().map(jsonString -> {
+						Log lg = null;
+						Gson gson = builder.create();
+						lg = gson.fromJson(jsonString, Log.class);
+						return lg;
+					}).collect(Collectors.toList());
+					log.info("Number of JSON log processed :" + logs.size());
 					if (logs != null && logs.size() > 0) {
 						ld.insertLog(logs);
+						Utility.writeState(logs.size() + lastRead);
 						logs.removeAll(logs);
-						Utility.writeState(lineNumber + lastRead);
 					}
 				}
-				log.info("New JSON logs count :" + lineNumber);
 			}
-
 		} catch (JsonSyntaxException e) {
-			log.error(e);
+			log.error(e.getMessage() ,e);
 		} catch (InterruptedException e) {
 			log.error(e);
 		} finally {
@@ -74,5 +63,4 @@ public class LogAlert {
 		}
 		log.info("Alert flags are set...Good Bye..");
 	}
-
 }
