@@ -9,7 +9,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -54,7 +53,7 @@ public class LogDao {
 			if (PropUtil.getQueryDrop() != null && PropUtil.getQueryDrop().length() > 0) {
 				stmt.executeUpdate(PropUtil.getQueryDrop());
 			}
-			int result = stmt.executeUpdate(PropUtil.getQueryCreate());
+			stmt.executeUpdate(PropUtil.getQueryCreate());
 			loger.info("Table created as per SQL :" + PropUtil.getQueryCreate());
 			stmt.close();
 		} catch (SQLException e) {
@@ -64,39 +63,45 @@ public class LogDao {
 
 	public void insertLog(List<Log> log) {
 		ResultSet rs = null;
-		PreparedStatement prepStmt = null;
+
 		try {
 			loger.info("Number of JSON logs to insert :" + log.size());
 			Statement stmt = this.connection.createStatement();
-			prepStmt = this.connection.prepareStatement(PropUtil.getQueryInsert());
-			for (Iterator<Log> iterator = log.iterator(); iterator.hasNext();) {
-				Log log2 = iterator.next();
-				prepStmt.setString(1, log2.getId());
-				prepStmt.setString(2, log2.getState());
-				prepStmt.setString(3, log2.getType());
-				prepStmt.setString(4, log2.getHost());
-				prepStmt.setLong(5, log2.getTimestamp());
-				prepStmt.setShort(6, log2.getAlert());
-				prepStmt.executeUpdate();
-			}
+			final PreparedStatement prepStmt = this.connection.prepareStatement(PropUtil.getQueryInsert());
+
+			log.forEach(log2 -> {
+				try {
+					prepStmt.setString(1, log2.getId());
+					prepStmt.setString(2, log2.getState());
+					prepStmt.setString(3, log2.getType());
+					prepStmt.setString(4, log2.getHost());
+					prepStmt.setLong(5, log2.getTimestamp());
+					prepStmt.setShort(6, log2.getAlert());
+					prepStmt.executeUpdate();
+				} catch (SQLException e) {
+					loger.error(e);
+				}
+			});
+			prepStmt.close();
 
 			loger.info("Number of JSON logs inserted :" + log.size());
-
 			stmt = this.connection.createStatement();
-
 			rs = stmt.executeQuery(PropUtil.getQueryAlert());
-
 			LinkedList<Log> scsmbstgr = fetchDataForAlert(rs);
 
-			prepStmt = this.connection.prepareStatement(PropUtil.getQueryAlertUpdate());
+			final PreparedStatement prepStmtU = this.connection.prepareStatement(PropUtil.getQueryAlertUpdate());
 			loger.info("Updating 'alert' flag in database.");
-			for (Iterator<Log> iterator = scsmbstgr.iterator(); iterator.hasNext();) {
-				Log log2 = iterator.next();
-				prepStmt.setShort(1, log2.getAlert());
-				prepStmt.setInt(2, log2.getDuration());
-				prepStmt.setInt(3, log2.getPk_id());
-				prepStmt.executeUpdate();
-			}
+			scsmbstgr.forEach(log2 -> {
+				try {
+					prepStmtU.setShort(1, log2.getAlert());
+					prepStmtU.setInt(2, log2.getDuration());
+					prepStmtU.setInt(3, log2.getPk_id());
+					prepStmtU.executeUpdate();
+				} catch (SQLException e) {
+					loger.error(e);
+				}
+			});
+			prepStmtU.close();
 			loger.info("Updated 'alert' flag in database.");
 
 			rs = stmt.executeQuery("select * from LOG");
@@ -105,14 +110,7 @@ public class LogDao {
 		} catch (SQLException e) {
 			loger.error(e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-					prepStmt.close();
-				} catch (SQLException e) {
-					loger.error(e);
-				}
-			}
+
 		}
 	}
 
@@ -149,7 +147,6 @@ public class LogDao {
 	}
 
 	private LinkedList<Log> fetchDataForAlert(ResultSet rs) {
-
 		LinkedList<Log> start = new LinkedList<Log>();
 		LinkedList<Log> finish = new LinkedList<Log>();
 		try {
@@ -161,39 +158,40 @@ public class LogDao {
 				} else if ("FINISHED".equals(state)) {
 					finish.add(log);
 				}
-
 			}
 		} catch (SQLException e) {
 			loger.error(e);
 		}
 		loger.info("Updating 'alert' flag.");
-		LinkedList<Log> alert = updateAlert(start, finish);
+
+		LinkedList<Log> alert = updateAlert().updateAlert(start, finish);
 		loger.info("Updated 'alert' flag.");
 		return alert;
 
 	}
 
-	private LinkedList<Log> updateAlert(LinkedList<Log> start, LinkedList<Log> finish) {
-
-		final int size = (start.size() - finish.size()) > 0 ? finish.size() : start.size();
-
-		for (int i = 0; i < size; i++) {
-			long x = finish.get(i).getTimestamp() - start.get(i).getTimestamp();
-			boolean isValid = start.get(i).getId().equals(finish.get(i).getId());
-			if (isValid) {
-				if (x > 4) {
-					finish.get(i).setAlert((short) 1);
-					finish.get(i).setDuration((int) x);
-					start.get(i).setAlert((short) 1);
-				} else {
-					finish.get(i).setDuration((int) x);
-					finish.get(i).setAlert((short) 0);
-					start.get(i).setAlert((short) 0);
+	private UpdateAlertFunctional updateAlert() {
+		UpdateAlertFunctional uaf = (s, f) -> {
+			int size = (s.size() - f.size()) > 0 ? s.size() : f.size();
+			for (int i = 0; i < size; i++) {
+				long x = f.get(i).getTimestamp() - s.get(i).getTimestamp();
+				boolean isValid = s.get(i).getId().equals(f.get(i).getId());
+				if (isValid) {
+					if (x > 4) {
+						f.get(i).setAlert((short) 1);
+						f.get(i).setDuration((int) x);
+						s.get(i).setAlert((short) 1);
+					} else {
+						f.get(i).setDuration((int) x);
+						f.get(i).setAlert((short) 0);
+						s.get(i).setAlert((short) 0);
+					}
 				}
 			}
-		}
-		start.addAll(finish);
-		return start;
+			s.addAll(f);
+			return s;
+		};
+		return uaf;
 	}
 
 	private Log getLog(ResultSet rs) {
